@@ -9,6 +9,7 @@ Daymark is a task manager for organizing work into sections. Create an account, 
 - Create tasks with a title, description, and status: **To do**, **In review**, or **Done**.
 - View tasks in a section or browse all tasks together.
 - Search task titles and descriptions across sections, filter by status, and drag tasks between statuses.
+- See live time in each task's current status and the average current time per status column within a section.
 - Delete tasks and switch between light and dark themes.
 
 ## Run with Docker
@@ -114,6 +115,8 @@ The backend loads local settings from `backend/.env`:
 | `MONGODB_DB_NAME` | `daymark` | MongoDB database name. |
 
 When running with Docker Compose, no `.env` file is required. The Compose file supplies local API settings and the server connects to the `mongo` service rather than `localhost`. For non-Docker local development, create `backend/.env` from `backend/.env.example` as described above.
+
+Tasks record the time they enter each status and cumulative seconds spent there. The column's average SLA uses the current time in status for tasks currently in that column, so it resets with the task timer after a status change. Existing tasks are initialized using their last update time, or their creation time if they have not been updated, so historical time from before this tracking was added cannot be recovered.
 
 ## Project structure
 

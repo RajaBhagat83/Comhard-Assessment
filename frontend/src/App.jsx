@@ -7,6 +7,7 @@ import {
   Plus, Search, Sparkles, Sun, Trash2, X,
 } from 'lucide-react'
 import { request } from './api.js'
+import { calculateStatusAverage, formatDuration, formatLiveDuration, getCurrentStatusSeconds, transitionTodoStatus } from './sla.js'
 
 const STATUS_META = {
   pending: { label: 'To do', dot: 'bg-slate-400', chip: 'bg-slate-100 text-slate-600' },
@@ -50,6 +51,12 @@ function DaymarkApp() {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia('(min-width: 768px)').matches)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [clockNow, setClockNow] = useState(Date.now())
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setClockNow(Date.now()), 1_000)
+    return () => window.clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
@@ -234,14 +241,28 @@ function DaymarkApp() {
 
   async function updateTodoStatus(todoId, status) {
     setError('')
+    const previousTodo = todos.find((todo) => todo.id === todoId)
+    if (!previousTodo || previousTodo.status === status) return
+
+    const optimisticTodo = transitionTodoStatus(previousTodo, status)
+    setTodos((current) => current.map((todo) => todo.id === todoId ? optimisticTodo : todo))
     try {
       const result = await request(`/todos/${todoId}`, {
         method: 'PATCH',
         token,
         body: JSON.stringify({ status }),
       })
-      setTodos((current) => current.map((todo) => todo.id === todoId ? result.todo : todo))
+      setTodos((current) => current.map((todo) => (
+        todo.id === todoId && todo.enteredCurrentStatusAt === optimisticTodo.enteredCurrentStatusAt
+          ? result.todo
+          : todo
+      )))
     } catch (updateError) {
+      setTodos((current) => current.map((todo) => (
+        todo.id === todoId && todo.enteredCurrentStatusAt === optimisticTodo.enteredCurrentStatusAt
+          ? previousTodo
+          : todo
+      )))
       setError(updateError.message)
     }
   }
@@ -391,6 +412,7 @@ function DaymarkApp() {
                 query={searchQuery}
                 statusFilter={statusFilter}
                 todos={searchResults}
+                clockNow={clockNow}
                 onStatusChange={updateTodoStatus}
                 onDeleteTodo={deleteTodo}
               />
@@ -408,6 +430,7 @@ function DaymarkApp() {
                 section={{ id: 'all-tasks', name: 'All tasks' }}
                 todos={visibleTodos}
                 groupedTodos={groupedTodos}
+                clockNow={clockNow}
                 searchQuery={searchQuery}
                 onCreateTodo={() => setModal({ type: 'todo' })}
                 onStatusChange={updateTodoStatus}
@@ -419,6 +442,7 @@ function DaymarkApp() {
                 section={activeSection}
                 todos={visibleTodos}
                 groupedTodos={groupedTodos}
+                clockNow={clockNow}
                 searchQuery={searchQuery}
                 onCreateTodo={() => setModal({ type: 'todo', sectionId: activeSection.id })}
                 onStatusChange={updateTodoStatus}
@@ -495,7 +519,7 @@ function SearchTools({ statusFilter, onStatusFilterChange }) {
   )
 }
 
-function SearchResults({ query, statusFilter, todos, onStatusChange, onDeleteTodo }) {
+function SearchResults({ query, statusFilter, todos, clockNow, onStatusChange, onDeleteTodo }) {
   const heading = query.trim()
     ? 'Search results'
     : `${statusFilter === 'pending' ? 'In progress' : STATUS_META[statusFilter].label} tasks`
@@ -511,7 +535,7 @@ function SearchResults({ query, statusFilter, todos, onStatusChange, onDeleteTod
       {todos.length > 0 ? (
         <div className="search-result-list">
           {todos.map((todo) => (
-            <TaskCard key={todo.id} todo={todo} onStatusChange={onStatusChange} onDelete={onDeleteTodo} />
+            <TaskCard key={todo.id} todo={todo} clockNow={clockNow} onStatusChange={onStatusChange} onDelete={onDeleteTodo} />
           ))}
         </div>
       ) : (
@@ -695,7 +719,7 @@ function StatCard({ label, count, icon, tone }) {
   )
 }
 
-function SectionBoard({ section, todos, groupedTodos, searchQuery, onCreateTodo, onStatusChange, onDeleteTodo, onBack }) {
+function SectionBoard({ section, todos, groupedTodos, searchQuery, clockNow, onCreateTodo, onStatusChange, onDeleteTodo, onBack }) {
   const [draggedTodoId, setDraggedTodoId] = useState(null)
   const [dropStatus, setDropStatus] = useState(null)
   const [trashActive, setTrashActive] = useState(false)
@@ -705,6 +729,12 @@ function SectionBoard({ section, todos, groupedTodos, searchQuery, onCreateTodo,
     { key: 'in review', title: 'In review', icon: <Clock3 size={15} />, tone: 'column-review' },
     { key: 'done', title: 'Done', icon: <Check size={15} />, tone: 'column-done' },
   ]
+
+  function formatAverageSla(status) {
+    if (groupedTodos[status].length === 0) return formatDuration(0)
+    const average = calculateStatusAverage(todos, status, clockNow)
+    return average === null ? formatDuration(0) : formatDuration(average)
+  }
 
   function handleDrop(event, status) {
     event.preventDefault()
@@ -771,11 +801,17 @@ function SectionBoard({ section, todos, groupedTodos, searchQuery, onCreateTodo,
             }}
             onDrop={(event) => handleDrop(event, column.key)}
           >
-            <div className="flex items-center justify-between px-1 pb-3">
-              <div className="flex items-center gap-2">
-                <span className={column.tone}>{column.icon}</span>
-                <h2 className="text-[13px] font-semibold text-slate-700">{column.title}</h2>
-                <span className="column-count">{groupedTodos[column.key].length}</span>
+            <div className="flex items-start justify-between px-1 pb-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className={column.tone}>{column.icon}</span>
+                  <h2 className="text-[13px] font-semibold text-slate-700">{column.title}</h2>
+                  <span className="column-count">{groupedTodos[column.key].length}</span>
+                </div>
+                <p className="column-sla" title="Average time tasks currently in this status column">
+                  <Clock3 size={11} />
+                  Avg SLA: {formatAverageSla(column.key)}
+                </p>
               </div>
               {column.key === 'pending' && <button className="icon-button h-7 w-7" onClick={onCreateTodo} aria-label="Add task"><Plus size={16} /></button>}
             </div>
@@ -784,6 +820,7 @@ function SectionBoard({ section, todos, groupedTodos, searchQuery, onCreateTodo,
                 <TaskCard
                   key={todo.id}
                   todo={todo}
+                  clockNow={clockNow}
                   onStatusChange={onStatusChange}
                   onDelete={onDeleteTodo}
                   draggable
@@ -810,7 +847,7 @@ function SectionBoard({ section, todos, groupedTodos, searchQuery, onCreateTodo,
   )
 }
 
-function TaskCard({ todo, onStatusChange, onDelete, draggable = false, dragging = false, onDragStart, onDragEnd }) {
+function TaskCard({ todo, clockNow, onStatusChange, onDelete, draggable = false, dragging = false, onDragStart, onDragEnd }) {
   const meta = STATUS_META[todo.status]
   return (
     <article
@@ -831,15 +868,20 @@ function TaskCard({ todo, onStatusChange, onDelete, draggable = false, dragging 
       {todo.description && <p className={`mt-2 whitespace-pre-wrap break-words text-xs leading-[1.65] text-slate-500 ${todo.status === 'done' ? 'opacity-70' : ''}`}>{todo.description}</p>}
       <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
         <span className="flex min-w-0 items-center gap-1.5 truncate text-[10px] text-slate-400"><FolderOpen size={12} />{todo.sectionName}</span>
-        <label className={`status-select ${meta.chip}`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
-          <select aria-label={`Change status for ${todo.title}`} value={todo.status} onChange={(event) => onStatusChange(todo.id, event.target.value)}>
-            <option value="pending">To do</option>
-            <option value="in review">In review</option>
-            <option value="done">Done</option>
-          </select>
-          <ChevronDown size={12} />
-        </label>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="task-status-time" title={`Time in ${meta.label}`}>
+            <Clock3 size={11} />{formatLiveDuration(getCurrentStatusSeconds(todo, clockNow))}
+          </span>
+          <label className={`status-select ${meta.chip}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+            <select aria-label={`Change status for ${todo.title}`} value={todo.status} onChange={(event) => onStatusChange(todo.id, event.target.value)}>
+              <option value="pending">To do</option>
+              <option value="in review">In review</option>
+              <option value="done">Done</option>
+            </select>
+            <ChevronDown size={12} />
+          </label>
+        </div>
       </div>
     </article>
   )

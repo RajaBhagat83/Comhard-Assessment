@@ -148,6 +148,8 @@ app.post('/api/sections/:sectionId/todos', requireAuth, asyncRoute(async (reques
     title: title.trim(),
     description: description.trim(),
     status,
+    enteredCurrentStatusAt: now,
+    durations: { pending: 0, inReview: 0, done: 0 },
     createdAt: now,
     updatedAt: now,
     sectionName: section.name,

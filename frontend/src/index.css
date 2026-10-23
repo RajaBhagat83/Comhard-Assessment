@@ -90,6 +90,8 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .task-trash-zone-active { transform: scale(1.01); border-color: #c84e5e; color: #a52e40; background: #f8e3e6; }
 .column-pending { color: #8792a5; }.column-review { color: #d49b42; }.column-done { color: #4aa189; }
 .column-count { display: grid; min-width: 20px; height: 20px; place-items: center; border-radius: 7px; color: #8d97a8; background: #eceff4; font-size: 10px; font-weight: 600; }
+.column-sla { display: flex; align-items: center; gap: 4px; margin-top: 5px; color: #929bad; font-size: 10px; }
+.task-status-time { display: inline-flex; align-items: center; gap: 4px; color: #8b95a7; font-size: 9px; white-space: nowrap; }
 .column-empty { display: grid; min-height: 86px; place-items: center; border: 1px dashed #e1e4ec; border-radius: 12px; color: #a5adbb; background: #ffffff80; font-size: 11px; }
 .task-card { position: relative; border: 1px solid #e9ebf2; border-radius: 13px; padding: 14px; background: white; box-shadow: 0 2px 5px #202a3a04; transition: border-color .18s, box-shadow .18s; }
 .task-card:hover { border-color: #d9d3f3; box-shadow: 0 5px 13px #202a3a09; }
@@ -254,6 +256,7 @@ html.dark .add-section-card, html.dark .column-empty { border-color: #34394a; co
 html.dark .search-empty { border-color: #34394a; background: #171a27; }
 html.dark .add-section-card:hover { border-color: #625393; background: #1b1e2c; }
 html.dark .column-count { color: #a5aec0; background: #2b3040; }
+html.dark .column-sla, html.dark .task-status-time { color: #929caf; }
 html.dark .progress-track { background: #2b3040; }
 html.dark .task-card-done h3 { color: #9aa5b8; }
 html.dark .status-select select option { color: #e0e5ef; background: #191c2a; }
