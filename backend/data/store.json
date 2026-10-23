@@ -1,0 +1,31 @@
+{
+  "users": [
+    {
+      "id": "817b0241-9775-4672-889a-7a5391cba27a",
+      "name": "Raja Bhagat",
+      "email": "bhagatraja116@gmail.com",
+      "passwordHash": "$2a$12$xaYbU9qtIZiFw2sgX2wxU.pPNiLWeuJCVwodydrfKHwO2.GaBqVN6",
+      "createdAt": "2026-10-23T06:11:34.909Z"
+    }
+  ],
+  "sections": [
+    {
+      "id": "c46d64bd-7cbf-4ad2-ad4d-85f30cd1424f",
+      "userId": "817b0241-9775-4672-889a-7a5391cba27a",
+      "name": "Work",
+      "createdAt": "2026-10-23T06:11:48.703Z"
+    }
+  ],
+  "todos": [
+    {
+      "id": "dc1ae542-0c19-43e1-893b-3c86f2f8bb97",
+      "sectionId": "c46d64bd-7cbf-4ad2-ad4d-85f30cd1424f",
+      "title": "PBT task",
+      "description": "To finish Calculation for PBT task",
+      "status": "pending",
+      "createdAt": "2026-10-23T06:12:30.358Z",
+      "updatedAt": "2026-10-23T06:12:30.358Z",
+      "sectionName": "Work"
+    }
+  ]
+}

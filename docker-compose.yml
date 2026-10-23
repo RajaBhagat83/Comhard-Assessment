@@ -1,0 +1,30 @@
+services:
+  client:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_PROXY_TARGET: http://server:4000
+    depends_on:
+      - server
+
+  server:
+    build: ./backend
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      JWT_SECRET: local-development-secret
+      MONGODB_URI: mongodb://mongo:27017/
+      MONGODB_DB_NAME: daymark
+      FRONTEND_ORIGIN: http://localhost:5173
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
