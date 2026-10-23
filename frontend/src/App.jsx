@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, Check, CheckCheck,
   ChevronDown, Circle, ClipboardList, Clock3, FolderOpen, FolderPlus,
-  LayoutGrid, ListTodo, LoaderCircle, LogOut, Menu, Moon, MoreHorizontal,
+  Eye, EyeOff, LayoutGrid, ListTodo, LoaderCircle, LogOut, Menu, Moon, MoreHorizontal,
   Plus, Search, Sparkles, Sun, Trash2, X,
 } from 'lucide-react'
 import { request } from './api.js'
@@ -43,7 +43,7 @@ function DaymarkApp() {
   const [sections, setSections] = useState([])
   const [todos, setTodos] = useState([])
   const [activeSectionId, setActiveSectionId] = useState('all')
-  const [authMode, setAuthMode] = useState('login')
+  const [authMode, setAuthMode] = useState(() => location.pathname === '/register' ? 'signup' : 'login')
   const [modal, setModal] = useState(null)
   const [loading, setLoading] = useState(Boolean(token))
   const [error, setError] = useState('')
@@ -62,6 +62,10 @@ function DaymarkApp() {
     document.documentElement.classList.toggle('dark', theme === 'dark')
     localStorage.setItem('daymark-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    if (!token) setAuthMode(location.pathname === '/register' ? 'signup' : 'login')
+  }, [location.pathname, token])
 
   useEffect(() => {
     const desktopQuery = window.matchMedia('(min-width: 768px)')
@@ -287,7 +291,11 @@ function DaymarkApp() {
   const authScreen = (
     <AuthScreen
       mode={authMode}
-      setMode={(mode) => { setAuthMode(mode); setError('') }}
+      setMode={(mode) => {
+        setAuthMode(mode)
+        setError('')
+        navigate(mode === 'signup' ? '/register' : '/login')
+      }}
       onSubmit={handleAuth}
       error={error}
       loading={loading}
@@ -476,6 +484,7 @@ function DaymarkApp() {
   return (
     <Routes>
       <Route path="/login" element={token ? <Navigate to="/dashboard" replace /> : authScreen} />
+      <Route path="/register" element={token ? <Navigate to="/dashboard" replace /> : authScreen} />
       <Route path="/dashboard" element={token ? dashboardScreen : <Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to={token ? '/dashboard' : '/login'} replace />} />
     </Routes>
@@ -551,6 +560,7 @@ function SearchResults({ query, statusFilter, todos, clockNow, onStatusChange, o
 
 function AuthScreen({ mode, setMode, onSubmit, error, loading, theme, onToggleTheme }) {
   const isSignup = mode === 'signup'
+  const [showPassword, setShowPassword] = useState(false)
   return (
     <main className="auth-page min-h-screen">
       <div className="auth-layout mx-auto grid min-h-screen max-w-[1240px] items-center px-5 py-10 lg:grid-cols-[1.05fr_.95fr] lg:gap-16 lg:px-12">
@@ -612,7 +622,18 @@ function AuthScreen({ mode, setMode, onSubmit, error, loading, theme, onToggleTh
               </label>
               <label className="form-label">
                 Password
-                <input name="password" type="password" autoComplete={isSignup ? 'new-password' : 'current-password'} placeholder={isSignup ? 'At least 8 characters' : 'Enter your password'} required minLength={8} maxLength={72} />
+                <span className="password-field">
+                  <input name="password" type={showPassword ? 'text' : 'password'} autoComplete={isSignup ? 'new-password' : 'current-password'} placeholder={isSignup ? 'At least 8 characters' : 'Enter your password'} required minLength={8} maxLength={72} />
+                  <button
+                    className="password-visibility"
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </span>
               </label>
               <button className="primary-button auth-submit w-full justify-center" type="submit" disabled={loading}>
                 {loading ? <LoaderCircle className="animate-spin" size={17} /> : <>{isSignup ? 'Create my account' : 'Sign in'}<ArrowRight size={17} /></>}

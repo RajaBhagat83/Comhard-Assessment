@@ -127,6 +127,10 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .auth-tab { border: 0; border-radius: 7px; padding: 9px; color: #8a94a5; background: transparent; font-size: 11px; font-weight: 600; transition: background .15s, color .15s; }
 .auth-tab-active { color: #5841b3; background: white; box-shadow: 0 1px 4px #1d26330f; }
 .form-label { display: flex; flex-direction: column; gap: 7px; color: #526075; font-size: 11px; font-weight: 600; }
+.password-field { position: relative; display: block; }
+.form-label .password-field input { padding-right: 40px; }
+.password-visibility { position: absolute; top: 50%; right: 10px; display: grid; width: 24px; height: 24px; place-items: center; transform: translateY(-50%); border: 0; border-radius: 6px; color: #929bad; background: transparent; }
+.password-visibility:hover { color: #6848d7; background: #f2efff; }
 .form-label input, .form-label textarea, .form-label select { width: 100%; border: 1px solid #e2e6ee; border-radius: 9px; outline: 0; padding: 11px 12px; color: #253146; background: white; font-size: 12px; font-weight: 400; transition: border .15s, box-shadow .15s; }
 .form-label input::placeholder, .form-label textarea::placeholder { color: #b1b8c5; }
 .form-label input:focus, .form-label textarea:focus, .form-label select:focus { border-color: #9d8ae9; box-shadow: 0 0 0 3px #8e75e51b; }
@@ -260,6 +264,8 @@ html.dark .column-sla, html.dark .task-status-time { color: #929caf; }
 html.dark .progress-track { background: #2b3040; }
 html.dark .task-card-done h3 { color: #9aa5b8; }
 html.dark .status-select select option { color: #e0e5ef; background: #191c2a; }
+html.dark .password-visibility { color: #9ca7bb; }
+html.dark .password-visibility:hover { color: #d0c6ff; background: #29243b; }
 html.dark .task-menu { border-color: #383d50; background: #202333; }
 html.dark .task-menu-delete { background: #202333; }
 html.dark .task-menu-delete:hover { background: #38252c; }
